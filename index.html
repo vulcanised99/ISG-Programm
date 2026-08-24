@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>ISG-Programm — geführte Sitzung</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0B3D66;
+    --navy-dark:#062748;
+    --teal:#2E8B8B;
+    --teal-dim:#DCEEEE;
+    --amber:#C8862B;
+    --amber-dim:#F5E7D2;
+    --ring-active:#2563C7;
+    --ring-active-dim:#DCE7F7;
+    --ring-pause:#C8862B;
+    --ring-pause-dim:#F5E7D2;
+    --akut:#B23A2E;
+    --akut-dim:#F7DEDB;
+    --bg:#EEF3F8;
+    --card:#FFFFFF;
+    --ink:#16232E;
+    --subink:#5B6B7A;
+    --line:#DCE5EE;
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    background-image:
+      radial-gradient(circle at 10% 0%, rgba(46,139,139,0.07), transparent 40%),
+      radial-gradient(circle at 95% 15%, rgba(200,134,43,0.08), transparent 45%);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:16px 16px 48px;}
+
+  .main-row{display:block;}
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    background:linear-gradient(135deg,var(--navy),var(--navy-dark));
+    color:#fff;
+    border-radius:var(--radius);
+    padding:16px 18px;
+    margin-bottom:14px;
+    box-shadow:0 8px 24px -12px rgba(6,39,72,0.5);
+  }
+  .topbar h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:19px;
+    margin:0 0 2px;
+    letter-spacing:0.2px;
+  }
+  .topbar .sub{
+    font-size:12.5px;
+    color:#C7D8EC;
+    margin-bottom:12px;
+  }
+  .topbar-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .stat{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    color:#DCE9F7;
+    background:rgba(255,255,255,0.08);
+    padding:5px 10px;
+    border-radius:999px;
+  }
+  .stat b{color:#fff;}
+  .mode-select{
+    display:flex; gap:4px; background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.15); border-radius:999px;
+    padding:3px; margin-top:10px;
+  }
+  .mode-btn{
+    flex:1; border:none; background:transparent; color:#C7D8EC;
+    font-family:'Inter',sans-serif; font-size:11.5px; font-weight:600;
+    padding:7px 6px; border-radius:999px; cursor:pointer; transition:all .15s;
+  }
+  .mode-btn.active{background:#fff; color:var(--navy-dark);}
+
+  .progress-outer{height:5px;background:rgba(255,255,255,0.15);border-radius:999px;margin-top:12px;overflow:hidden;}
+  .progress-inner{height:100%;background:linear-gradient(90deg,var(--ring-active),var(--ring-pause));border-radius:999px;width:0%;transition:width .4s ease;}
+
+  /* ---------- Chips (jump nav) ---------- */
+  .chiprow{display:flex;gap:7px;overflow-x:auto;overflow-y:visible;padding:6px 6px 12px;scrollbar-width:thin;}
+  .chip{
+    flex:0 0 auto;
+    width:34px;height:34px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;
+    border:2px solid var(--line); background:#fff; color:var(--subink);
+    cursor:pointer; position:relative; transition:all .15s;
+  }
+  .chip.mob{border-color:var(--teal);color:var(--teal);}
+  .chip.kraft{border-color:var(--amber);color:var(--amber);}
+  .chip.done.mob{background:var(--teal);color:#fff;}
+  .chip.done.kraft{background:var(--amber);color:#fff;}
+  .chip.active{outline:2px solid var(--navy);outline-offset:1.5px;}
+  .chip .dot{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--akut);border:1.5px solid #fff;}
+
+  /* ---------- Session card ---------- */
+  .session{
+    background:var(--card);
+    border-radius:24px;
+    padding:26px 20px 22px;
+    box-shadow:0 14px 30px -18px rgba(11,61,102,0.35);
+    text-align:center;
+    margin-bottom:14px;
+  }
+  .phase-label{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    letter-spacing:2.5px;
+    font-size:12.5px;
+    text-transform:uppercase;
+    color:var(--subink);
+    margin-bottom:6px;
+    height:16px;
+  }
+  .phase-label.hold{color:var(--ring-active);}
+  .phase-label.rest{color:var(--ring-pause);}
+  .phase-label.switch{color:var(--ring-pause);}
+  .phase-label.akutphase{color:var(--akut);}
+
+  .dial-wrap{position:relative;width:230px;height:230px;margin:0 auto 8px;}
+  .dial-wrap svg{width:100%;height:100%;transform:rotate(-90deg);}
+  .ring-track{fill:none;stroke:var(--line);stroke-width:10;}
+  .ring-progress{fill:none;stroke-width:10;stroke-linecap:round;transition:stroke .3s;}
+  .tick{fill:var(--line);}
+  .tick.mob{fill:var(--teal-dim);stroke:var(--teal);stroke-width:1.5;}
+  .tick.kraft{fill:var(--amber-dim);stroke:var(--amber);stroke-width:1.5;}
+  .tick.done.mob{fill:var(--teal);}
+  .tick.done.kraft{fill:var(--amber);}
+  .tick.current{fill:var(--navy);stroke:var(--navy);}
+
+  .dial-center{
+    position:absolute; top:0; right:0; bottom:0; left:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+  }
+  .big-time{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:39px; font-weight:600; color:var(--ink); line-height:1;
+    font-variant-numeric:tabular-nums;
+  }
+  .sub-time{
+    font-size:11.5px; color:var(--subink); margin-top:5px; max-width:140px;
+  }
+
+  .ex-title{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:20px; font-weight:600; margin:10px 0 4px;
+  }
+  .badges{display:flex;gap:6px;justify-content:center;margin-bottom:14px;flex-wrap:wrap;}
+  .badge{
+    font-size:10.5px; font-weight:600; letter-spacing:.4px; text-transform:uppercase;
+    padding:3px 9px; border-radius:999px;
+  }
+  .badge.mob{background:var(--teal-dim);color:var(--teal);}
+  .badge.kraft{background:var(--amber-dim);color:var(--amber);}
+  .badge.akut{background:var(--akut-dim);color:var(--akut);}
+  .badge.level{background:#EEF1F4;color:var(--subink);}
+
+  .controls{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:6px;}
+  .btn{
+    border:none; cursor:pointer; font-family:'Inter',sans-serif; font-weight:600;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    transition:transform .1s, filter .15s;
+  }
+  .btn:active{transform:scale(0.96);}
+  .btn-main{
+    background:linear-gradient(135deg,var(--teal),#236f6f);
+    color:#fff; font-size:15px; padding:14px 30px; border-radius:999px;
+    box-shadow:0 8px 18px -8px rgba(46,139,139,0.6);
+  }
+  .btn-main.pause{background:linear-gradient(135deg,#8a94a0,#5B6B7A);}
+  .btn-round{
+    width:44px;height:44px;border-radius:50%;background:#F1F4F8;color:var(--navy);
+    font-size:16px; border:1px solid var(--line);
+  }
+  .btn-round:hover{background:#E6ECF3;}
+
+  /* ---------- Detail card ---------- */
+  .detail{
+    background:var(--card); border-radius:20px; padding:18px 20px 16px;
+    box-shadow:0 10px 24px -18px rgba(11,61,102,0.3);
+  }
+  .detail h3{
+    font-family:'Space Grotesk',sans-serif; font-size:13px; text-transform:uppercase;
+    letter-spacing:1.2px; color:var(--subink); margin:14px 0 8px;
+  }
+  .detail h3:first-child{margin-top:0;}
+  .steps{margin:0;padding:0;list-style:none;}
+  .steps li{
+    font-size:14px; line-height:1.5; padding-left:18px; position:relative; margin-bottom:7px;color:var(--ink);
+  }
+  .steps li::before{
+    content:'';position:absolute;left:0;top:7px;width:6px;height:6px;border-radius:50%;background:var(--current-accent,var(--teal));
+  }
+  .note{font-size:13px;line-height:1.5;font-style:italic;color:var(--subink);margin:0;}
+  .note.warum{color:var(--current-accent,var(--teal));}
+  .note.tip{color:var(--navy);}
+
+  .finish{
+    text-align:center; padding:50px 20px;
+  }
+  .finish .big-check{
+    width:74px;height:74px;border-radius:50%;
+    background:linear-gradient(135deg,var(--teal),var(--amber));
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:34px;
+    margin:0 auto 18px;
+  }
+  .finish h2{font-family:'Space Grotesk',sans-serif;margin-bottom:6px;}
+  .finish p{color:var(--subink);font-size:14px;}
+
+  footer{
+    text-align:center; font-size:11.5px; color:var(--subink); margin-top:18px; line-height:1.6;
+  }
+
+  .mute-btn{position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.12);border:none;color:#fff;
+    width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:13px;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar" style="position:relative;">
+    <button class="mute-btn" id="muteBtn" title="Ton an/aus">🔊</button>
+    <span id="wakeIndicator" title="Bildschirm bleibt an" style="display:none;position:absolute;top:16px;right:52px;font-size:13px;color:#DCE9F7;align-items:center;">☀︎</span>
+    <h1>ISG-Programm</h1>
+    <div class="sub">Geführte Sitzung · Lösen → Beruhigen → Stabilisieren</div>
+    <div class="topbar-row">
+      <div class="stat">Übung <b id="statExNum">1</b>/<b id="statExTotal">8</b></div>
+      <div class="stat">⏱ <b id="statElapsed">0:00</b> / ~<span id="statEstimate">–</span></div>
+    </div>
+    <div class="mode-select" id="modeSelect">
+      <button class="mode-btn active" data-mode="full">Vollständig</button>
+      <button class="mode-btn" data-mode="short">Kurz ~10 Min</button>
+      <button class="mode-btn" data-mode="akut">Nur Akut</button>
+    </div>
+    <div class="progress-outer"><div class="progress-inner" id="progressBar"></div></div>
+  </div>
+
+  <div class="chiprow" id="chipRow"></div>
+
+  <div class="main-row">
+    <div id="sessionArea"></div>
+    <div class="detail" id="detailCard"></div>
+  </div>
+
+  <footer>
+    Bei Ausstrahlung unters Knie, Taubheit oder Verschlechterung: ärztlich abklären lassen.<br>
+    Programm angelehnt an die Patienteninformation der Orthopädischen Praxis Beckum (op-beckum.de).
+  </footer>
+</div>
+
+<script>
+/* ================= DATA ================= */
+const EX = [
+  {
+    num:1, title:"Knie zur Brust – einzeln", cat:"mob", akut:true, level:"leicht",
+    sets:1, reps:2, hold:15, holdRange:"15 Sek.", restRep:5, restSet:0, restSide:5, uni:true,
+    steps:[
+      "Rückenlage, beide Beine zunächst aufstellen.",
+      "Ein Knie mit beiden Händen fassen und sanft schräg zur gleichseitigen Schulter ziehen.",
+      "Anderes Bein bleibt aufgestellt oder liegt lang ausgestreckt; Becken kippt dabei leicht mit.",
+      "Halten, langsam lösen, dann die Gegenseite."
+    ],
+    warum:"Die einseitige Ausführung bewegt gezielt eine Beckenhälfte gegen das Kreuzbein und mobilisiert so das ISG.",
+    tip:"Beim Heranziehen ausatmen; mit der schmerzfreien Seite beginnen."
+  },
+  {
+    num:2, title:"Rotation in Rückenlage", cat:"mob", akut:false, level:"leicht",
+    sets:1, reps:1, hold:30, holdRange:"30 Sek.", restRep:0, restSet:0, restSide:3, uni:true,
+    steps:[
+      "Rückenlage, Beine angewinkelt, Arme seitlich ausbreiten.",
+      "Beide Knie gemeinsam langsam zu einer Seite sinken lassen – nur so weit, wie es angenehm bleibt.",
+      "Schultern bleiben am Boden, Kopf dreht zur Gegenseite.",
+      "Halten, langsam zur Mitte zurück, dann die andere Seite."
+    ],
+    warum:"Die sanfte Verwringung zwischen Schultergürtel und Becken mobilisiert das ISG und den lumbosakralen Übergang.",
+    tip:"Ein Kissen zwischen den Knien macht die Übung bei akuten Beschwerden angenehmer."
+  },
+  {
+    num:3, title:"Gegenläufige Becken-Mobilisation", cat:"mob", akut:false, level:"leicht",
+    sets:1, reps:8, hold:5, holdRange:"5 Sek.", restRep:5, restSet:0, restSide:5, uni:true,
+    steps:[
+      "Rückenlage, ein Knie mit den Händen zur Brust ziehen.",
+      "Gleichzeitig das andere Bein lang ausstrecken und die Ferse aktiv in die Unterlage schieben.",
+      "Gegenbewegung der Beckenhälften halten.",
+      "Locker lassen, wiederholen, dann Seiten tauschen."
+    ],
+    warum:"Eine Beckenhälfte kippt nach hinten, die andere nach vorne – so bewegt sich das ISG durch seinen kleinen Spielraum.",
+    tip:"Die Bewegung ist klein – Qualität und ruhige Wiederholung zählen mehr als Kraft."
+  },
+  {
+    num:4, title:"Adduktoren-Reset (Kissen zw. den Knien)", cat:"mob", akut:true, level:"leicht",
+    sets:2, reps:8, hold:8, holdRange:"5–10 Sek.", restRep:5, restSet:20, restSide:0, uni:false,
+    steps:[
+      "Rückenlage, Beine angewinkelt aufstellen.",
+      "Festes Kissen oder Ball zwischen die Knie klemmen.",
+      "Knie kräftig gegen das Kissen zusammendrücken, dabei weiteratmen.",
+      "Vollständig locker lassen – die Entspannungsphase ist Teil der Übung."
+    ],
+    warum:"Klassischer Blockade-Löser: Die An- und Entspannung der Oberschenkel-Innenseite löst die Schutzspannung ums ISG.",
+    tip:"Darf bei akuter Blockierung mehrmals täglich eingesetzt werden."
+  },
+  {
+    num:5, title:"Abduktoren-Reset (Hände geg. die Knie)", cat:"mob", akut:true, level:"leicht",
+    sets:2, reps:8, hold:8, holdRange:"5–10 Sek.", restRep:5, restSet:20, restSide:0, uni:false,
+    steps:[
+      "Rückenlage, Beine angewinkelt, Knie hüftbreit.",
+      "Hände von außen an die Knie legen.",
+      "Knie nach außen gegen den Widerstand der Hände drücken.",
+      "Vollständig locker lassen; im Wechsel mit Übung 4 ausführen."
+    ],
+    warum:"Gegenspieler-Reset: Erst im Wechsel mit Übung 4 bringt das Auseinanderdrücken den Beckenring wieder ins Gleichgewicht.",
+    tip:"Merkhilfe: 3× zusammendrücken, 3× auseinanderdrücken – dauert keine zwei Minuten."
+  },
+  {
+    num:6, title:"Piriformis-Dehnung in Rückenlage", cat:"mob", akut:false, level:"mittel",
+    sets:1, reps:1, hold:40, holdRange:"40 Sek.", restRep:0, restSet:0, restSide:6, uni:true,
+    steps:[
+      "Rückenlage, beide Beine angewinkelt.",
+      "Rechten Außenknöchel auf das linke Knie legen (Vierer-Position).",
+      "Linken Oberschenkel mit beiden Händen umfassen und Richtung Brust ziehen.",
+      "Ziehen tief im rechten Gesäß spüren, halten, dann Seitenwechsel."
+    ],
+    warum:"Der Piriformis liegt direkt über dem ISG und verspannt bei Störungen fast immer mit; die Dehnung nimmt Druck vom Gelenk.",
+    tip:"Löst die Dehnung Kribbeln im Bein aus, Intensität verringern – der Ischiasnerv verläuft direkt am Muskel."
+  },
+  {
+    num:7, title:"Brücke mit Ball zwischen den Knien", cat:"kraft", akut:false, level:"mittel",
+    sets:2, reps:10, hold:8, holdLabel:"Wiederholung", holdRange:"8 Sek. pro Wiederholung (hoch·halten·runter)", restRep:0, restSet:20, restSide:0, uni:false,
+    steps:[
+      "Rückenlage, Beine angewinkelt, Ball oder festes Kissen zwischen die Knie klemmen.",
+      "Ball leicht zusammendrücken und halten.",
+      "Becken langsam anheben, bis Oberschenkel und Rumpf eine Linie bilden.",
+      "Halten, langsam abrollen – Ball bleibt die ganze Zeit unter Druck."
+    ],
+    warum:"Der Ball aktiviert Adduktoren und Beckenboden zusätzlich zum Gesäß und stabilisiert so gezielt den Beckenring.",
+    tip:"Beide Beckenhälften gleich hoch halten – vor dem Spiegel oder mit den Händen kontrollieren."
+  },
+  {
+    num:8, title:"Seitliches Beinheben (Gluteus medius)", cat:"kraft", akut:false, level:"mittel",
+    sets:2, reps:10, hold:5, holdLabel:"Wiederholung", holdRange:"5 Sek. pro Wiederholung (hoch·halten·runter)", restRep:0, restSet:20, restSide:6, uni:true,
+    steps:[
+      "Seitenlage, Körper bildet gerade Linie, unteres Bein leicht angewinkelt.",
+      "Oberes Bein gestreckt und leicht nach hinten versetzt anheben – Fußspitze zeigt nach vorne, nicht zur Decke.",
+      "Halten, langsam absenken, ohne abzulegen.",
+      "Becken bleibt stabil – nicht nach hinten wegkippen."
+    ],
+    warum:"Der mittlere Gesäßmuskel ist der wichtigste seitliche Beckenstabilisator; ist er schwach, gerät das ISG unter Scherlast.",
+    tip:"Kleiner, sauberer Bewegungsumfang ist besser als hohes Beinheben mit Ausweichen."
+  }
+];
+
+/* ================= PHASE QUEUE BUILDER ================= */
+// Builds a flat list of phases for one exercise: hold / restRep / restSet / restSide
+// Supports either a single "hold" per rep (ex.hold) or a custom sub-phase
+// sequence per rep (ex.phasesPerRep, e.g. Hoch/Halten/Runter).
+function buildQueue(ex){
+  const q = [];
+  const sides = ex.uni ? ["links","rechts"] : [null];
+  const subPhases = ex.phasesPerRep || [{type:"hold", duration:ex.hold, subLabel:ex.holdLabel || "Halten"}];
+  sides.forEach((side, sIdx)=>{
+    for(let s=1; s<=ex.sets; s++){
+      for(let r=1; r<=ex.reps; r++){
+        for(let sp=0; sp<subPhases.length; sp++){
+          const base = subPhases[sp];
+          q.push({type:base.type, duration:base.duration, subLabel:base.subLabel, side, set:s, rep:r});
+        }
+        const isLastRepOfSet = r===ex.reps;
+        const isLastSetOfSide = s===ex.sets;
+        if(!isLastRepOfSet && ex.restRep>0){
+          q.push({type:"restRep", duration:ex.restRep, side, set:s, rep:r});
+        } else if(isLastRepOfSet && !isLastSetOfSide && ex.restSet>0){
+          q.push({type:"restSet", duration:ex.restSet, side, set:s, rep:r});
+        }
+      }
+    }
+    const isLastSide = sIdx === sides.length-1;
+    if(!isLastSide && ex.restSide>0){
+      q.push({type:"restSide", duration:ex.restSide, side, set:ex.sets, rep:ex.reps});
+    }
+  });
+  return q;
+}
+function estimateDuration(ex){
+  return buildQueue(ex).reduce((a,p)=>a+p.duration,0) + 3; // +3s buffer for ready screen
+}
+
+/* ================= STATE ================= */
+let activeList = EX.slice();               // exercises in current mode (all or akut-only)
+let exIndex = 0;                            // index within activeList
+let queue = [];
+let qIndex = -1;                            // -1 = "ready" screen before first hold
+let phaseRemaining = 0;                     // seconds left in current phase
+let running = false;
+let tickHandle = null;
+let lastTick = null;
+let elapsedSeconds = 0;
+let completed = new Set();                  // completed exercise .num values
+let mode = "full";                          // "full" | "short" | "akut"
+let muted = false;
+let audioCtx = null;
+
+// Kurzprogramm (~10 Min): Prävention-priorisiert – Mobilisation gestrafft,
+// Kraft/Kontrolle (7,8) mit 2 Sätzen beibehalten. Übung 2 & 3 entfallen
+// (Effekt überschneidet sich stark mit Übung 1 bzw. 4/5).
+const SHORT_OVERRIDES = {
+  1: {sets:1, reps:1, hold:15, holdRange:"15 Sek.", restRep:0, restSet:0, restSide:5},
+  4: {sets:1, reps:8, hold:6, holdRange:"6 Sek.", restRep:3, restSet:0, restSide:0},
+  5: {sets:1, reps:8, hold:6, holdRange:"6 Sek.", restRep:3, restSet:0, restSide:0},
+  6: {sets:1, reps:1, hold:30, holdRange:"30 Sek.", restRep:0, restSet:0, restSide:5},
+  7: {sets:2, reps:8, hold:6, holdRange:"6 Sek. pro Wiederholung (hoch·halten·runter)", restRep:1, restSet:15, restSide:0},
+  8: {sets:2, reps:8, hold:4, holdRange:"4 Sek. pro Wiederholung (hoch·halten·runter)", restRep:1, restSet:15, restSide:5}
+};
+
+function effectiveExercise(ex){
+  if(mode==="short" && SHORT_OVERRIDES[ex.num]){
+    return Object.assign({}, ex, SHORT_OVERRIDES[ex.num]);
+  }
+  return ex;
+}
+
+function currentEx(){ return activeList[exIndex]; }
+
+function setActiveList(){
+  let base;
+  if(mode==="akut") base = EX.filter(e=>e.akut);
+  else if(mode==="short") base = EX.filter(e=>SHORT_OVERRIDES[e.num]);
+  else base = EX.slice();
+  activeList = base.map(effectiveExercise);
+  if(exIndex >= activeList.length) exIndex = 0;
+}
+
+function beep(freq=880, dur=0.09, vol=0.05, delay=0){
+  if(muted) return;
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const t0 = audioCtx.currentTime + delay;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.frequency.value = freq;
+    osc.type = "sine";
+    gain.gain.setValueAtTime(vol, t0);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t0); osc.stop(t0+dur+0.02);
+  }catch(e){}
+}
+function vibrate(pattern){ try{ navigator.vibrate && navigator.vibrate(pattern); }catch(e){} }
+
+/* ================= RENDER: layout that changes rarely ================= */
+function fmtTime(s){
+  s = Math.max(0,Math.round(s));
+  const m = Math.floor(s/60), sec = s%60;
+  var secStr = sec<10 ? "0"+sec : ""+sec;
+  return m+":"+secStr;
+}
+function accentVar(cat){ return cat==="kraft" ? "var(--amber)" : "var(--teal)"; }
+function catClass(cat){ return cat==="kraft" ? "kraft" : "mob"; }
+
+function renderChips(){
+  const row = document.getElementById("chipRow");
+  row.innerHTML = "";
+  activeList.forEach((ex, i)=>{
+    const c = document.createElement("div");
+    c.className = "chip "+catClass(ex.cat)+(completed.has(ex.num)?" done":"")+(i===exIndex?" active":"");
+    c.textContent = ex.num;
+    if(ex.akut){
+      const d = document.createElement("div"); d.className="dot"; c.appendChild(d);
+    }
+    c.onclick = ()=> jumpTo(i);
+    row.appendChild(c);
+  });
+  document.getElementById("statExTotal").textContent = activeList.length;
+}
+
+function renderDetail(){
+  const ex = currentEx();
+  const card = document.getElementById("detailCard");
+  if(!ex){ card.innerHTML=""; return; }
+  card.style.setProperty("--current-accent", accentVar(ex.cat));
+  var stepsHtml = "";
+  for(var i=0;i<ex.steps.length;i++){
+    stepsHtml += "<li>"+ex.steps[i]+"</li>";
+  }
+  card.innerHTML =
+    "<h3>Ausführung</h3>" +
+    "<ul class=\"steps\">"+stepsHtml+"</ul>" +
+    "<h3>Warum diese Übung</h3>" +
+    "<p class=\"note warum\">"+ex.warum+"</p>" +
+    "<h3>Tipp</h3>" +
+    "<p class=\"note tip\">"+ex.tip+"</p>";
+}
+
+/* ================= DIAL (SVG) ================= */
+const R = 82, CX=115, CY=115, CIRC = 2*Math.PI*R;
+function buildDialSVG(){
+  var ticks = "";
+  var n = 8;
+  for(var i=0;i<n;i++){
+    var a = (-90 + i*(360/n)) * Math.PI/180;
+    var tx = CX + (R+19)*Math.cos(a);
+    var ty = CY + (R+19)*Math.sin(a);
+    ticks += "<circle class=\"tick\" cx=\""+tx+"\" cy=\""+ty+"\" r=\"8\" data-tickidx=\""+i+"\"></circle>";
+  }
+  return "<svg viewBox=\"0 0 230 230\">" +
+      "<circle class=\"ring-track\" cx=\""+CX+"\" cy=\""+CY+"\" r=\""+R+"\"></circle>" +
+      "<circle class=\"ring-progress\" id=\"ringProgress\" cx=\""+CX+"\" cy=\""+CY+"\" r=\""+R+"\" " +
+        "stroke=\"var(--teal)\" stroke-dasharray=\""+CIRC+"\" stroke-dashoffset=\""+CIRC+"\"></circle>" +
+      "<g id=\"tickGroup\" transform=\"rotate(90 "+CX+" "+CY+")\">"+ticks+"</g>" +
+    "</svg>";
+}
+
+function renderSessionSkeleton(){
+  document.getElementById("sessionArea").innerHTML = `
+    <div class="session" id="sessionCard">
+      <div class="phase-label" id="phaseLabel">&nbsp;</div>
+      <div class="dial-wrap">
+        ${buildDialSVG()}
+        <div class="dial-center">
+          <div class="big-time" id="bigTime">0:00</div>
+          <div class="sub-time" id="subTime"></div>
+        </div>
+      </div>
+      <div class="ex-title" id="exTitle"></div>
+      <div class="badges" id="exBadges"></div>
+      <div class="controls">
+        <button class="btn btn-round" id="prevBtn" title="Vorherige Übung">◀</button>
+        <button class="btn btn-main" id="mainBtn">Start</button>
+        <button class="btn btn-round" id="nextBtn" title="Nächste Übung">▶</button>
+      </div>
+    </div>
+  `;
+  document.getElementById("prevBtn").onclick = ()=> jumpTo(exIndex-1);
+  document.getElementById("nextBtn").onclick = ()=> jumpTo(exIndex+1);
+  document.getElementById("mainBtn").onclick = onMainBtn;
+}
+
+function updateTickVisuals(){
+  const ex = currentEx();
+  const total = activeList.length;
+  const tickEls = document.querySelectorAll("#tickGroup .tick");
+  for(let i=0;i<tickEls.length;i++){
+    const el = tickEls[i];
+    el.classList.remove("mob","kraft","done","current");
+    if(i < total){
+      const e = activeList[i];
+      el.classList.add(catClass(e.cat));
+      if(completed.has(e.num)) el.classList.add("done");
+      if(i===exIndex) el.classList.add("current");
+      el.style.display = "";
+    } else {
+      el.style.display = "none";
+    }
+  }
+}
+
+function renderExerciseHeader(){
+  const ex = currentEx();
+  document.getElementById("exTitle").textContent = ex.num+". "+ex.title;
+  const badges = [
+    "<span class=\"badge "+catClass(ex.cat)+"\">"+(ex.cat==="kraft"?"Kräftigung":"Mobilisation")+"</span>",
+    "<span class=\"badge level\">"+ex.level+"</span>"
+  ];
+  if(ex.akut) badges.push("<span class=\"badge akut\">Akut</span>");
+  document.getElementById("exBadges").innerHTML = badges.join("");
+  document.getElementById("statExNum").textContent = exIndex+1;
+  document.getElementById("ringProgress").setAttribute("stroke", "var(--ring-active)");
+  updateTickVisuals();
+  renderDetail();
+  renderChips();
+}
+
+/* ================= PHASE FLOW ================= */
+function labelForPhase(p, ex){
+  if(!p) return {text:"Bereit", cls:""};
+  const sideTxt = p.side ? (p.side==="links"?" · links":" · rechts") : "";
+  switch(p.type){
+    case "hold": return {text:(p.subLabel||"Halten")+sideTxt, cls:"hold"};
+    case "up": return {text:(p.subLabel||"Hoch")+sideTxt, cls:"hold"};
+    case "down": return {text:(p.subLabel||"Runter")+sideTxt, cls:"hold"};
+    case "restRep": return {text:"Kurz lösen"+sideTxt, cls:"rest"};
+    case "restSet": return {text:"Satzpause"+sideTxt, cls:"rest"};
+    case "restSide": return {text:"Seite wechseln", cls:"switch"};
+    default: return {text:"", cls:""};
+  }
+}
+function subLabelForPhase(p, ex){
+  if(!p) return (ex.sets>1? "Satz 1/"+ex.sets+" · ":"")+"Wiederholung 1/"+ex.reps+(ex.uni? " · Seite: links":"");
+  const sideTxt = p.side ? (" · Seite: "+p.side) : "";
+  const setTxt = ex.sets>1 ? ("Satz "+p.set+"/"+ex.sets+" · ") : "";
+  return setTxt+"Wiederholung "+p.rep+"/"+ex.reps+sideTxt;
+}
+
+function startExercise(){
+  const ex = currentEx();
+  queue = buildQueue(ex);
+  qIndex = -1;
+  phaseRemaining = 0;
+  running = false;
+  renderExerciseHeader();
+  renderReadyState();
+}
+
+function renderReadyState(){
+  const ex = currentEx();
+  const firstDuration = ex.phasesPerRep ? ex.phasesPerRep[0].duration : ex.hold;
+  document.getElementById("phaseLabel").textContent = "Bereit";
+  document.getElementById("phaseLabel").className = "phase-label";
+  document.getElementById("bigTime").textContent = fmtTime(firstDuration);
+  document.getElementById("subTime").textContent = "Ø "+ex.holdRange+" · "+subLabelForPhase(null, ex);
+  document.getElementById("ringProgress").style.strokeDashoffset = CIRC;
+  document.getElementById("mainBtn").textContent = "Start";
+  document.getElementById("mainBtn").classList.remove("pause");
+}
+
+function onMainBtn(){
+  if(!running){
+    if(qIndex === -1){ advancePhase(); }
+    running = true;
+    requestWakeLock();
+    document.getElementById("mainBtn").textContent = "Pause";
+    document.getElementById("mainBtn").classList.add("pause");
+    lastTick = performance.now();
+    if(tickHandle) clearInterval(tickHandle);
+    tickHandle = setInterval(tick, 100);
+  } else {
+    running = false;
+    document.getElementById("mainBtn").textContent = "Weiter";
+    document.getElementById("mainBtn").classList.remove("pause");
+    clearInterval(tickHandle);
+    if(wakeLock){ wakeLock.release().catch(()=>{}); wakeLock = null; }
+  }
+}
+
+function tick(){
+  const now = performance.now();
+  const dt = (now-lastTick)/1000;
+  lastTick = now;
+  phaseRemaining -= dt;
+  elapsedSeconds += dt;
+  document.getElementById("statElapsed").textContent = fmtTime(elapsedSeconds);
+  const curQ = queue[qIndex];
+  const frac = Math.max(0, phaseRemaining / ((curQ && curQ.duration) || 1));
+  document.getElementById("ringProgress").style.strokeDashoffset = CIRC * frac;
+  document.getElementById("bigTime").textContent = fmtTime(phaseRemaining);
+  if(phaseRemaining <= 0){
+    advancePhase();
+  }
+}
+
+function isPausePhase(type){
+  return type==="restRep" || type==="restSet" || type==="restSide";
+}
+function phaseRingColor(type){
+  return isPausePhase(type) ? "var(--ring-pause)" : "var(--ring-active)";
+}
+
+function advancePhase(){
+  qIndex++;
+  if(qIndex >= queue.length){
+    finishExercise();
+    return;
+  }
+  const p = queue[qIndex];
+  const ex = currentEx();
+  phaseRemaining = p.duration;
+  const lbl = labelForPhase(p, ex);
+  document.getElementById("phaseLabel").textContent = lbl.text;
+  document.getElementById("phaseLabel").className = "phase-label "+lbl.cls;
+  document.getElementById("subTime").textContent = subLabelForPhase(p, ex);
+  document.getElementById("bigTime").textContent = fmtTime(p.duration);
+  document.getElementById("ringProgress").style.strokeDashoffset = 0;
+  document.getElementById("ringProgress").setAttribute("stroke", phaseRingColor(p.type));
+
+  if(p.type==="hold"){ beep(740,0.08,0.05); vibrate(30); }
+  else if(p.type==="up"){ beep(880,0.05,0.04); }
+  else if(p.type==="down"){ beep(660,0.05,0.04); }
+  else if(p.type==="restSide"){ beep(520,0.12,0.05); vibrate([20,60,20]); }
+  else { beep(600,0.06,0.035); }
+}
+
+function finishExercise(){
+  clearInterval(tickHandle);
+  running = false;
+  if(wakeLock){ wakeLock.release().catch(()=>{}); wakeLock = null; }
+  completed.add(currentEx().num);
+  beep(660,0.1,0.05,0); beep(880,0.14,0.05,0.12);
+  vibrate([30,50,30,50,60]);
+  renderChips(); updateTickVisuals();
+
+  if(exIndex < activeList.length-1){
+    document.getElementById("phaseLabel").textContent = "Übung geschafft!";
+    document.getElementById("phaseLabel").className = "phase-label";
+    document.getElementById("bigTime").textContent = "✓";
+    document.getElementById("subTime").textContent = "Weiter zur nächsten Übung …";
+    document.getElementById("ringProgress").style.strokeDashoffset = 0;
+    document.getElementById("mainBtn").textContent = "Nächste Übung";
+    document.getElementById("mainBtn").classList.remove("pause");
+    document.getElementById("mainBtn").onclick = ()=> jumpTo(exIndex+1);
+  } else {
+    renderFinishScreen();
+  }
+  updateProgressBar();
+}
+
+function renderFinishScreen(){
+  document.getElementById("sessionArea").innerHTML = `
+    <div class="session finish">
+      <div class="big-check">✓</div>
+      <h2>Programm abgeschlossen</h2>
+      <p>Gesamtzeit: ${fmtTime(elapsedSeconds)}</p>
+      <div class="controls" style="margin-top:18px;">
+        <button class="btn btn-main" id="restartBtn">Neu starten</button>
+      </div>
+    </div>`;
+  document.getElementById("restartBtn").onclick = ()=> location.reload();
+  document.getElementById("detailCard").innerHTML = "";
+}
+
+function jumpTo(i){
+  if(i<0 || i>=activeList.length) return;
+  clearInterval(tickHandle);
+  running = false;
+  exIndex = i;
+  renderSessionSkeleton();
+  startExercise();
+  updateProgressBar();
+}
+
+function updateProgressBar(){
+  const pct = Math.round((completed.size/activeList.length)*100);
+  document.getElementById("progressBar").style.width = pct+"%";
+}
+
+function updateEstimate(){
+  const total = activeList.reduce((a,e)=>a+estimateDuration(e),0);
+  document.getElementById("statEstimate").textContent = fmtTime(total);
+}
+
+/* ================= WAKE LOCK (Bildschirm nicht sperren) ================= */
+let wakeLock = null;
+function requestWakeLock(){
+  try{
+    if('wakeLock' in navigator){
+      navigator.wakeLock.request('screen').then(function(lock){
+        wakeLock = lock;
+        wakeLock.addEventListener('release', function(){ updateWakeIcon(false); });
+        updateWakeIcon(true);
+      }).catch(function(){ updateWakeIcon(false); });
+    }
+  }catch(e){ updateWakeIcon(false); }
+}
+function updateWakeIcon(on){
+  const el = document.getElementById("wakeIndicator");
+  if(el) el.style.display = on ? "inline-flex" : "none";
+}
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible' && running){
+    requestWakeLock();
+  }
+});
+
+/* ================= INIT / TOGGLES ================= */
+const modeButtons = document.querySelectorAll("#modeSelect .mode-btn");
+for(let i=0;i<modeButtons.length;i++){
+  modeButtons[i].onclick = function(){
+    const newMode = this.getAttribute("data-mode");
+    if(newMode === mode) return;
+    mode = newMode;
+    for(let j=0;j<modeButtons.length;j++){ modeButtons[j].classList.remove("active"); }
+    this.classList.add("active");
+    completed.clear();
+    elapsedSeconds = 0;
+    setActiveList();
+    exIndex = 0;
+    updateEstimate();
+    jumpTo(0);
+  };
+}
+document.getElementById("muteBtn").onclick = function(){
+  muted = !muted;
+  this.textContent = muted ? "🔇" : "🔊";
+};
+
+setActiveList();
+updateEstimate();
+renderSessionSkeleton();
+startExercise();
+renderChips();
+updateProgressBar();
+</script>
+</body>
+</html>
