@@ -283,7 +283,7 @@
 
     /* Linke Spalte: nur noch Phasen-Label + GROSSER Ring + Steuerung.
        Titel/Badges wandern in die rechte Spalte (.detail-header). */
-    #sessionArea{flex:0 0 auto; height:100%; min-height:0;}
+    #sessionArea{flex:0 0 260px; height:100%; min-height:0;}
     .session{
       height:100%; padding:2px 10px; border-radius:14px;
       display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -332,7 +332,7 @@
     .mode-btn{font-size:7px; padding:2px 2px;}
     .chiprow{padding:0 0 2px;}
     .chip{width:14px;height:14px;font-size:6.5px;}
-    #sessionArea{flex:0 0 auto;}
+    #sessionArea{flex:0 0 220px;}
     .session{padding:1px 8px;}
     .phase-label{font-size:8px; height:9px; margin-bottom:1px;}
     .dial-wrap{width:128px; height:128px;}
@@ -659,7 +659,7 @@ function renderSessionSkeleton(){
   document.getElementById("sessionArea").innerHTML = `
     <div class="session" id="sessionCard">
       <div class="phase-label" id="phaseLabel">&nbsp;</div>
-      <div class="dial-wrap">
+      <div class="dial-wrap" id="dialWrap">
         ${buildDialSVG()}
         <div class="dial-center">
           <div class="big-time" id="bigTime">0:00</div>
@@ -668,7 +668,7 @@ function renderSessionSkeleton(){
       </div>
       <div class="ex-title" id="exTitle"></div>
       <div class="badges" id="exBadges"></div>
-      <div class="controls">
+      <div class="controls" id="sessionControls">
         <button class="btn btn-round" id="prevBtn" title="Vorherige Übung">◀</button>
         <button class="btn btn-main" id="mainBtn">Start</button>
         <button class="btn btn-round" id="nextBtn" title="Nächste Übung">▶</button>
@@ -741,6 +741,77 @@ function startExercise(){
   renderReadyState();
 }
 
+/* ================= LANDSCAPE: RING DYNAMISCH AN VERFUEGBAREN PLATZ ANPASSEN =================
+   Statt fuer jedes Geraet Pixelwerte zu raten, wird die tatsaechlich verfuegbare
+   Hoehe/Breite der Session-Karte zur Laufzeit gemessen und der Ring exakt darauf
+   skaliert. Das funktioniert unabhaengig von Geraet, Safe-Area oder Browser-Chrome.
+   Hinweis: Die Erkennung "sind wir im Kompakt-Querformat?" haengt bewusst NICHT
+   von window.innerHeight/matchMedia/getComputedStyle ab (diese APIs liefern in
+   manchen eingebetteten Webviews unzuverlaessige Werte, auch wenn das visuelle
+   Rendering korrekt ist). Stattdessen wird die tatsaechliche PIXELHOEHE der
+   Titelzeile per getBoundingClientRect gemessen: Im Kompaktmodus ist sie klar
+   kleiner (Titel/Untertitel ausgeblendet) als im normalen Hochformat. */
+function fitLandscapeDial(){
+  var wrap = document.getElementById("dialWrap");
+  var topbarEl = document.querySelector(".topbar");
+  if(!wrap || !topbarEl) return;
+  var isCompact = topbarEl.getBoundingClientRect().height < 70;
+  var bigTime = document.getElementById("bigTime");
+  if(!isCompact){
+    wrap.style.width = "";
+    wrap.style.height = "";
+    if(bigTime) bigTime.style.fontSize = "";
+    return;
+  }
+  var sessionEl = document.getElementById("sessionCard");
+  var phaseLabel = document.getElementById("phaseLabel");
+  var subTime = document.getElementById("subTime");
+  var controls = document.getElementById("sessionControls");
+  if(!sessionEl || !phaseLabel || !subTime || !controls) return;
+
+  var sessionRect = sessionEl.getBoundingClientRect();
+  var cs = window.getComputedStyle(sessionEl);
+  var padV = (parseFloat(cs.paddingTop)||0) + (parseFloat(cs.paddingBottom)||0);
+  var padH = (parseFloat(cs.paddingLeft)||0) + (parseFloat(cs.paddingRight)||0);
+
+  var phaseLabelH = phaseLabel.getBoundingClientRect().height
+    + (parseFloat(window.getComputedStyle(phaseLabel).marginBottom)||0);
+  var subTimeH = subTime.getBoundingClientRect().height
+    + (parseFloat(window.getComputedStyle(subTime).marginTop)||0);
+  var controlsH = controls.getBoundingClientRect().height
+    + (parseFloat(window.getComputedStyle(controls).marginTop)||0);
+  var wrapMarginBottom = parseFloat(window.getComputedStyle(wrap).marginBottom)||0;
+
+  var usedHeight = padV + phaseLabelH + subTimeH + controlsH + wrapMarginBottom;
+  var safety = 6;
+
+  var maxByHeight = sessionRect.height - usedHeight - safety;
+  var maxByWidth = sessionRect.width - padH;
+  var size = Math.floor(Math.min(maxByHeight, maxByWidth));
+
+  // Sicherheitsnetz: Die dynamische Berechnung darf den Ring nur VERGROESSERN,
+  // nie verkleinern. Faellt die Messung aus irgendeinem Grund zu klein aus
+  // (z.B. Layout/Viewport noch nicht vollstaendig bereit), bleibt automatisch
+  // die feste CSS-Basisgroesse (198px) erhalten statt zu schrumpfen.
+  var CSS_FALLBACK_SIZE = 198;
+  if(!isFinite(size) || size <= CSS_FALLBACK_SIZE || sessionRect.height < 60){
+    return;
+  }
+  size = Math.min(size, 300);
+
+  wrap.style.width = size + "px";
+  wrap.style.height = size + "px";
+  if(bigTime) bigTime.style.fontSize = Math.round(size * 0.19) + "px";
+}
+
+let fitDialTimer = null;
+function scheduleFitLandscapeDial(){
+  if(fitDialTimer) clearTimeout(fitDialTimer);
+  fitDialTimer = setTimeout(fitLandscapeDial, 60);
+}
+window.addEventListener("resize", scheduleFitLandscapeDial);
+window.addEventListener("orientationchange", scheduleFitLandscapeDial);
+
 function renderReadyState(){
   const ex = currentEx();
   const firstDuration = ex.phasesPerRep ? ex.phasesPerRep[0].duration : ex.hold;
@@ -751,6 +822,7 @@ function renderReadyState(){
   document.getElementById("ringProgress").style.strokeDashoffset = CIRC;
   document.getElementById("mainBtn").textContent = "Start";
   document.getElementById("mainBtn").classList.remove("pause");
+  fitLandscapeDial();
 }
 
 function onMainBtn(){
